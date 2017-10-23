@@ -1,0 +1,9 @@
+Постройте классификатор SVM для набора данных chips.txt и настройте сам алгоритм и параметр регуляризации таким образом, чтобы алгоритм дал наилучшую оценку. Визуализируйте результат работы алгоритма: раскрасьте элементы набора данных по классам и постройте разделяющую плоскость. Далее, постройте для того же набора данных классификатор kNN, настройте его таким образом, чтобы он дал наилучшую оценку. Сравните результаты работы 2 алгоритмов по этим оценкам (достаточно вывести их друг с другом в табличке 2*2)
+
+http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC
+
+http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
+
+http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
+
+http://scikit-learn.org/stable/modules/model_evaluation.html#classification-metrics
