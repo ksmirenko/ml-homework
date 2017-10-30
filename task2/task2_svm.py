@@ -65,7 +65,7 @@ y_max = X[:, 1].max()
 XX, YY = np.mgrid[x_min:x_max:200j, y_min:y_max:200j]
 Z = clf.decision_function(np.c_[XX.ravel(), YY.ravel()])
 Z = Z.reshape(XX.shape)
-plt.contour(XX, YY, Z, colors=['k'], linestyles=['-'], levels=[0])
+plt.contour(XX, YY, Z, colors=['k', 'k', 'k'], linestyles=['--', '-', '--'], levels=[-.5, 0, .5])
 plt.pcolormesh(XX, YY, Z > 0, cmap=plt.cm.Paired)
 
 plt.show()
