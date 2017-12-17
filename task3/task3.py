@@ -79,6 +79,11 @@ def main():
         Image.fromarray(new_image).save(output_image_name)
         print(f"Saved {output_image_name}")
 
+        # Save the result for this k to file
+        # np.savetxt(f"res/centroids_{k}.txt", X=centroids, delimiter='\t')
+        # clustered_compressed = np.array(clustered).astype(np.uint8)
+        # np.savetxt(f"res/clustered_{k}.txt", X=clustered_compressed, delimiter='\t', fmt='%1d')
+
     print("Done.")
 
 
