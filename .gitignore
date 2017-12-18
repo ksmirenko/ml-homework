@@ -1,5 +1,7 @@
 **/.DS_Store
 .idea/
 
+**/__pycache__
+
 task3/out_*
 task4/policemen/

@@ -1,10 +1,37 @@
+import sys
 import numpy as np
 from PIL import Image
 
-# For launching in IDEA to work properly
-prefix = "task4/"
-# prefix = ""
+sys.path.append('../task3/')
+# Works when launched from terminal
+# noinspection PyUnresolvedReferences
+from k_means import k_means
+
+prefix = ""
 image_name = f"{prefix}policemen.jpg"
+data_path = f"{prefix}policemen/"
+
+# Configuration
+n_clusters = [2, 3, 4, 5, 6, 7]
+max_iterations = 100
+launch_count = 3
+
+
+def launch_k_means():
+    image = np.array(Image.open(image_name))
+    X = image.reshape((image.shape[0] * image.shape[1], image.shape[2]))
+
+    for k in n_clusters:
+        print(f"{k} clusters")
+        # 'Compress' image using K-means
+        centroids, clustered = k_means(X, k=k, max_iterations=max_iterations, launch_count=launch_count)
+
+        # Save the result for this k to file
+        np.savetxt(f"{data_path}centroids_{k}.txt", X=centroids, delimiter='\t')
+        clustered_compressed = np.array(clustered).astype(np.uint8)
+        np.savetxt(f"{data_path}clustered_{k}.txt", X=clustered_compressed, delimiter='\t', fmt='%1d')
+
+    print("Done.")
 
 
 # Load previously calculated clustering data for policemen.jpg
@@ -13,9 +40,9 @@ def load_clustered_data():
     X = image.reshape((image.shape[0] * image.shape[1], image.shape[2]))
 
     data = dict()
-    for k in range(2, 8):
-        centroids = np.loadtxt(f"{prefix}policemen/centroids_{k}.txt", dtype=np.float64, delimiter='\t')
-        clusters = np.loadtxt(f"{prefix}policemen/clustered_{k}.txt", dtype=np.uint8, delimiter='\t')
+    for k in n_clusters:
+        centroids = np.loadtxt(f"{data_path}centroids_{k}.txt", dtype=np.float64, delimiter='\t')
+        clusters = np.loadtxt(f"{data_path}clustered_{k}.txt", dtype=np.uint8, delimiter='\t')
         data[k] = {'centroids': centroids, 'clusters': clusters}
 
     return X, data
@@ -55,12 +82,19 @@ def calculate_calinski_harabasz_score(X, k, clusters, centroids):
     return ((n - k) * s_b) / ((k - 1) * s_w)
 
 
-X, cluster_data = load_clustered_data()
+def main():
+    launch_k_means()
 
-# db_scores = [calculate_davies_bouldin_index(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
-#              for k in range(2, 8)]
+    X, cluster_data = load_clustered_data()
 
-# ch_scores = [calculate_calinski_harabasz_score(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
-#              for k in range(2, 8)]
+    db_scores = [calculate_davies_bouldin_index(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
+                 for k in n_clusters]
 
-# np.savetxt(f"{prefix}policemen/ch.txt", X=ch_scores, delimiter='\t')
+    ch_scores = [calculate_calinski_harabasz_score(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
+                 for k in n_clusters]
+
+    np.savetxt(f"{prefix}policemen/db.txt", X=db_scores, delimiter='\t')
+    np.savetxt(f"{prefix}policemen/ch.txt", X=ch_scores, delimiter='\t')
+
+
+main()
