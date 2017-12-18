@@ -1,15 +1,21 @@
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 from PIL import Image
 
+# For launching in IDEA
+# from task3.k_means import k_means
+# prefix = 'task4/'
+
+# For launching from terminal
 sys.path.append('../task3/')
-# Works when launched from terminal
+prefix = ""
 # noinspection PyUnresolvedReferences
 from k_means import k_means
 
-prefix = ""
 image_name = f"{prefix}policemen.jpg"
 data_path = f"{prefix}policemen/"
+output_image_path = f"{prefix}out_policemen.jpg"
 
 # Configuration
 n_clusters = [2, 3, 4, 5, 6, 7]
@@ -31,7 +37,7 @@ def launch_k_means():
         clustered_compressed = np.array(clustered).astype(np.uint8)
         np.savetxt(f"{data_path}clustered_{k}.txt", X=clustered_compressed, delimiter='\t', fmt='%1d')
 
-    print("Done.")
+    print("Done clustering.")
 
 
 # Load previously calculated clustering data for policemen.jpg
@@ -82,19 +88,56 @@ def calculate_calinski_harabasz_score(X, k, clusters, centroids):
     return ((n - k) * s_b) / ((k - 1) * s_w)
 
 
-def main():
-    launch_k_means()
+def compress(centroids, clustered):
+    image = np.array(Image.open(image_name))
+    new_X = np.array([centroids[cluster_index] for cluster_index in clustered])
+    new_X = new_X.astype(np.uint8)
 
-    X, cluster_data = load_clustered_data()
-
-    db_scores = [calculate_davies_bouldin_index(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
-                 for k in n_clusters]
-
-    ch_scores = [calculate_calinski_harabasz_score(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
-                 for k in n_clusters]
-
-    np.savetxt(f"{prefix}policemen/db.txt", X=db_scores, delimiter='\t')
-    np.savetxt(f"{prefix}policemen/ch.txt", X=ch_scores, delimiter='\t')
+    # Write output image
+    new_image = new_X.reshape(image.shape)
+    output_image_name = output_image_path
+    Image.fromarray(new_image).save(output_image_name)
+    print(f"Saved {output_image_name}")
 
 
-main()
+# Perform cluster analysis
+# This is a lengthy operation, so it can be done once and commented out later, since the output is stored in files
+# launch_k_means()
+
+# Calculate metrics
+X, cluster_data = load_clustered_data()
+db_scores = [calculate_davies_bouldin_index(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
+             for k in n_clusters]
+ch_scores = [calculate_calinski_harabasz_score(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
+             for k in n_clusters]
+# Save calculated metrics
+np.savetxt(f"{prefix}policemen/db.txt", X=db_scores, delimiter='\t')
+np.savetxt(f"{prefix}policemen/ch.txt", X=ch_scores, delimiter='\t')
+
+# Draw plots
+plt.plot(n_clusters, db_scores, color='blue', linestyle=':', linewidth=1, marker='s', markersize=6,
+         markeredgecolor='black', markerfacecolor='blue', markeredgewidth=1,
+         label=u'Davies-Bouldin index')
+plt.xticks(np.arange(min(n_clusters), max(n_clusters) + 1, 1.0))
+plt.xlabel('# of clusters')
+plt.legend(loc='best')
+plt.show()
+plt.plot(n_clusters, ch_scores, color='red', linestyle=':', linewidth=1, marker='o', markersize=6,
+         markeredgecolor='black', markerfacecolor='red', markeredgewidth=1,
+         label=u'Calinski-Harabasz score')
+plt.xticks(np.arange(min(n_clusters), max(n_clusters) + 1, 1.0))
+plt.xlabel('# of clusters')
+plt.legend(loc='best')
+plt.show()
+
+# Decide the best number of clusters
+# Suppressed warnings below: np.argmin/argmax returns a scalar value here
+# noinspection PyTypeChecker
+best_k_db = n_clusters[np.argmin(db_scores)]
+# noinspection PyTypeChecker
+best_k_ch = n_clusters[np.argmax(ch_scores)]
+print(f"Best # of clusters, based on Davies-Bouldin index, is {best_k_db}")
+print(f"Best # of clusters, based on Calinski-Harabasz score, is {best_k_ch}")
+
+# 'Compress' image using K-means
+compress(centroids=cluster_data[best_k_db]['centroids'], clustered=cluster_data[best_k_db]['clusters'])
