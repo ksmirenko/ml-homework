@@ -18,7 +18,7 @@ data_path = f"{prefix}policemen/"
 output_image_path = f"{prefix}out_policemen.jpg"
 
 # Configuration
-n_clusters = [2, 3, 4, 5, 6, 7]
+n_clusters = [2, 3, 4, 5, 6, 7, 8]
 max_iterations = 100
 launch_count = 3
 
@@ -61,15 +61,15 @@ def sq_dist(x1, x2):
 def calculate_davies_bouldin_index(X, k, clusters, centroids):
     def sigma(i):
         cluster_points = [X[j] for j in range(X.shape[0]) if clusters[j] == i]
-        return np.sqrt(np.sum([sq_dist(centroids[i], point) ** 2 for point in cluster_points]) / len(cluster_points))
+        return np.sqrt(np.sum([sq_dist(centroids[i], point) for point in cluster_points]) / len(cluster_points))
 
     def db_index_for_pair(i, j):
         return (sigma(i) + sigma(j)) / sq_dist(centroids[i], centroids[j])
 
-    def max_db_index_fof_cluster(i):
+    def max_db_index_for_cluster(i):
         return np.max([db_index_for_pair(i, j) for j in range(k) if i != j])
 
-    return np.mean([max_db_index_fof_cluster(i) for i in range(k)])
+    return np.mean([max_db_index_for_cluster(i) for i in range(k)])
 
 
 def calculate_calinski_harabasz_score(X, k, clusters, centroids):
@@ -100,19 +100,30 @@ def compress(centroids, clustered):
     print(f"Saved {output_image_name}")
 
 
+def decide_best_k(n_clusters, scores):
+    def delta(i):
+        return (scores[i + 1] - scores[i]) - (scores[i] - scores[i - 1])
+
+    deltas = [delta(i) for i in range(1, len(scores) - 1)]
+    return n_clusters[1 + np.argmin(deltas)]
+
+
 # Perform cluster analysis
 # This is a lengthy operation, so it can be done once and commented out later, since the output is stored in files
 # launch_k_means()
 
-# Calculate metrics
+# Calculate and save metrics
 X, cluster_data = load_clustered_data()
 db_scores = [calculate_davies_bouldin_index(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
              for k in n_clusters]
 ch_scores = [calculate_calinski_harabasz_score(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
              for k in n_clusters]
-# Save calculated metrics
 np.savetxt(f"{prefix}policemen/db.txt", X=db_scores, delimiter='\t')
 np.savetxt(f"{prefix}policemen/ch.txt", X=ch_scores, delimiter='\t')
+
+# Load previously calculated metrics (alternative to recalculation)
+# db_scores = np.loadtxt(f"{prefix}policemen/db.txt", delimiter='\t').ravel()
+# ch_scores = np.loadtxt(f"{prefix}policemen/ch.txt", delimiter='\t').ravel()
 
 # Draw plots
 plt.plot(n_clusters, db_scores, color='blue', linestyle=':', linewidth=1, marker='s', markersize=6,
@@ -133,11 +144,11 @@ plt.show()
 # Decide the best number of clusters
 # Suppressed warnings below: np.argmin/argmax returns a scalar value here
 # noinspection PyTypeChecker
-best_k_db = n_clusters[np.argmin(db_scores)]
+best_k_db = decide_best_k(n_clusters, db_scores)
 # noinspection PyTypeChecker
-best_k_ch = n_clusters[np.argmax(ch_scores)]
+best_k_ch = decide_best_k(n_clusters, ch_scores)
 print(f"Best # of clusters, based on Davies-Bouldin index, is {best_k_db}")
 print(f"Best # of clusters, based on Calinski-Harabasz score, is {best_k_ch}")
 
 # 'Compress' image using K-means
-compress(centroids=cluster_data[best_k_db]['centroids'], clustered=cluster_data[best_k_db]['clusters'])
+compress(centroids=cluster_data[best_k_ch]['centroids'], clustered=cluster_data[best_k_ch]['clusters'])
