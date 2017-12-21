@@ -55,13 +55,13 @@ def load_clustered_data():
 
 
 def sq_dist(x1, x2):
-    return sum([v ** 2 for v in (x1 - x2)])
+    return np.sum([v ** 2 for v in (x1.ravel() - x2.ravel())])
 
 
 def calculate_davies_bouldin_index(X, k, clusters, centroids):
     def sigma(i):
         cluster_points = [X[j] for j in range(X.shape[0]) if clusters[j] == i]
-        return np.sqrt(np.sum([sq_dist(centroids[i], point) for point in cluster_points]) / len(cluster_points))
+        return np.sqrt(np.sum([sq_dist(centroids[i], point) ** 2 for point in cluster_points]) / len(cluster_points))
 
     def db_index_for_pair(i, j):
         return (sigma(i) + sigma(j)) / sq_dist(centroids[i], centroids[j])
@@ -84,7 +84,6 @@ def calculate_calinski_harabasz_score(X, k, clusters, centroids):
     total_mean = np.mean(X, axis=0)
     s_w = np.sum([s_w_for_cluster(i) for i in range(k)])
     s_b = np.sum([(len(cluster_points[i]) * sq_dist(centroids[i], total_mean)) for i in range(k)])
-    print(f"{s_w}\t{s_b}")
     return ((n - k) * s_b) / ((k - 1) * s_w)
 
 
@@ -100,7 +99,7 @@ def compress(centroids, clustered):
     print(f"Saved {output_image_name}")
 
 
-def decide_best_k(n_clusters, scores):
+def decide_best_k_ch(n_clusters, scores):
     def delta(i):
         return (scores[i + 1] - scores[i]) - (scores[i] - scores[i - 1])
 
@@ -114,10 +113,13 @@ def decide_best_k(n_clusters, scores):
 
 # Calculate and save metrics
 X, cluster_data = load_clustered_data()
+print("Calculating DB scores...")
 db_scores = [calculate_davies_bouldin_index(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
              for k in n_clusters]
+print("Done. Calculating CH scores...")
 ch_scores = [calculate_calinski_harabasz_score(X, k, cluster_data[k]['clusters'], cluster_data[k]['centroids'])
              for k in n_clusters]
+print("Done.")
 np.savetxt(f"{prefix}policemen/db.txt", X=db_scores, delimiter='\t')
 np.savetxt(f"{prefix}policemen/ch.txt", X=ch_scores, delimiter='\t')
 
@@ -144,9 +146,9 @@ plt.show()
 # Decide the best number of clusters
 # Suppressed warnings below: np.argmin/argmax returns a scalar value here
 # noinspection PyTypeChecker
-best_k_db = decide_best_k(n_clusters, db_scores)
+best_k_db = n_clusters[np.argmin(db_scores)]
 # noinspection PyTypeChecker
-best_k_ch = decide_best_k(n_clusters, ch_scores)
+best_k_ch = decide_best_k_ch(n_clusters, ch_scores)
 print(f"Best # of clusters, based on Davies-Bouldin index, is {best_k_db}")
 print(f"Best # of clusters, based on Calinski-Harabasz score, is {best_k_ch}")
 
